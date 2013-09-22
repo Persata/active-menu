@@ -123,13 +123,15 @@ ActiveMenuNode.prototype.addMenuNode = function(text, route) {
  * Activate This Branch of the Menu Tree.
  *
  * Iterates up the parents of this node, activating them
- * by appending a class of 'active-node' to their list element.
+ * by appending a class of 'active' to their list element.
  */
 ActiveMenuNode.prototype.activateBranch = function() {
     this.isActive = true;
     // Stop At The Top of The Branch
-    if (typeof this.parent == this.constructor.name) {
+    if (this.parent.hasOwnProperty('activateBranch')) {
         this.parent.activateBranch();
+    } else {
+        this.parent.isActive = true;
     }
 };
 
@@ -142,27 +144,25 @@ ActiveMenuNode.prototype.getRenderHtmlAttributes = function() {
 
     // Attributes
     var htmlAttributes = [];
+    for (var key in this.htmlAttributes) {
+        htmlAttributes[key] = this.htmlAttributes[key];
+    }
 
     // Get Class Array
     var htmlClassArray = [];
 
+    // If Classes Are Already Defined, We Need to Append Rather Than Replace
+    if (this.htmlAttributes.hasOwnProperty('class')) {
+        htmlClassArray = this.htmlAttributes.class.split(' ');
+    }
+
     // Handle Active State
     if (this.isActive) {
-        // If Classes Are Already Defined, We Need to Append Rather Than Replace
-        if (this.htmlAttributes.hasOwnProperty('class')) {
-            htmlClassArray = this.htmlAttributes.class.split(' ');
-        }
-        htmlClassArray.push('active-node');
+        htmlClassArray.push('active');
     }
 
     // Handle Depth
-    var depth;
-    if (this.isList()) {
-        depth = this.depth - 1;
-    } else {
-        depth = this.depth;
-    }
-    htmlClassArray.push('level-' + depth);
+    htmlClassArray.push('level-' + this.depth);
 
     // Handle Case of Being Only Child, Then First, Then Last
     if (this.isFirst && this.isLast) {
@@ -186,14 +186,32 @@ ActiveMenuNode.prototype.getRenderHtmlAttributes = function() {
 };
 
 /**
+ * Get HTML Attributes for a List Element (<ul>)
+ * @returns {Array}
+ */
+ActiveMenuNode.prototype.getListHtmlAttributes = function()
+{
+    // Html Attributes
+    var htmlAttributes = [];
+    // HTML Classes
+    var htmlClasses = [];
+    // Handle Active State
+    if (this.isActive) {
+        htmlClasses.push('active');
+    }
+    // Handle Depth
+    htmlClasses.push('level-' + this.depth);
+    // Add Classe
+    htmlAttributes.class = htmlClasses.join(' ');
+    // Return
+    return htmlAttributes;
+};
+
+/**
  * Generate The Inner HTML For This Node
  * @returns {String}
  */
 ActiveMenuNode.prototype.getInnerHtml = function() {
-    // Check There's Inner Html to Return
-    if (!this.text) {
-        return String();
-    }
 
     // Inner Element Type
     var elementType;
@@ -210,7 +228,7 @@ ActiveMenuNode.prototype.getInnerHtml = function() {
     // Check Current Route
     if (this.route == this.menuInstance.getCurrentRequestRoute()) {
         // Add Active Link Class to Link
-        htmlAttributes.class = 'active-link';
+        htmlAttributes.class = 'active';
         // Activate Parents
         this.activateBranch();
     }
@@ -220,6 +238,14 @@ ActiveMenuNode.prototype.getInnerHtml = function() {
         htmlAttributes,
         this.text
     );
+
+    // If A List, Inner HTML Must Be Wrapped in a List Item
+    if (this.isList()) {
+        innerHtml = this.menuInstance.generator.li(
+            this.getRenderHtmlAttributes(),
+            innerHtml
+        );
+    }
 
     // Compile and Return
     return innerHtml.compile();
@@ -255,9 +281,17 @@ ActiveMenuNode.prototype.toHtml = function() {
         elementInnerHtml.push(childNode.toHtml());
     });
 
+    // Handle List Attributes
+    var htmlAttributes;
+    if (this.isList()) {
+        htmlAttributes = this.getListHtmlAttributes();
+    } else {
+        htmlAttributes = this.getRenderHtmlAttributes();
+    }
+
     // Render
     var elementHtml = this.menuInstance.generator[this.elementType](
-        this.getRenderHtmlAttributes(),
+        htmlAttributes,
         elementInnerHtml
     );
 

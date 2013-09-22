@@ -47,7 +47,7 @@ var ActiveMenu = module.exports = function(menuName) {
      * Depth
      * @type {int}
      */
-    this.depth = 0;
+    this.depth = -1;
 
     /**
      * HTML Sourcery Generator
