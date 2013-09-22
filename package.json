@@ -1,7 +1,7 @@
 {
     "name": "active-menu",
     "description" : "Facilitates the creation of menus in Node applications.",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "repository": {
         "type": "git",
         "url": "git://github.com/persata/active-menu.git"
