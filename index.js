@@ -9,7 +9,7 @@ var ActiveMenuNode = require('./active-menu-node');
  * Menu Instance Reference For This Menu (that = this)
  * @type {module}
  */
-var menuInstance = null;
+var menuInstances = {};
 
 /**
  * Main Menu Class
@@ -20,7 +20,7 @@ var menuInstance = null;
 var ActiveMenu = module.exports = function(menuName) {
 
     // Assign Instance Reference
-    menuInstance = this;
+    menuInstances[menuName] = this;
 
     // Menu Name
     this.menuName = menuName;
@@ -62,11 +62,13 @@ var ActiveMenu = module.exports = function(menuName) {
  * @param res
  * @param next
  */
-ActiveMenu.prototype.menu = function(req, res, next) {
-    // Assign Request
-    menuInstance.currentRequest = req;
-    // Assign To Local
-    res.locals[menuInstance.menuName] = menuInstance;
+ActiveMenu.menu = function(req, res, next) {
+    for(var menuName in menuInstances) {
+        // Assign Request
+        menuInstances[menuName].currentRequest = req;
+        // Assign To Local
+        res.locals[menuName] = menuInstances[menuName];
+    }
     // Next
     next();
 };
@@ -99,7 +101,7 @@ ActiveMenu.prototype.setAttributes = function(attributes) {
  */
 ActiveMenu.prototype.addMenuNode = function(text, route) {
     // New Node
-    var newNode = new ActiveMenuNode(menuInstance, this);
+    var newNode = new ActiveMenuNode(this, this);
     // Assign Variables
     newNode.text = text;
     newNode.route = route;
@@ -127,7 +129,7 @@ ActiveMenu.prototype.toString = function() {
     // Generate Children HTML Recursively
     this.nodeList.forEach(function(childNode, key) {
         // Handle First and Last
-        if (key == 0) {
+        if (key === 0) {
             childNode.isFirst = true;
         }
         if (key == (nodeList.length - 1)) {
